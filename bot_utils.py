@@ -54,11 +54,15 @@ def export_conversations_to_excel(conversations: List[Conversation], period: str
 
             if msg.text.startswith('/var/www/whatsapp-bot/media'):
                 link = msg.text.replace('/var/www/whatsapp-bot', 'http://164.90.219.27')
+                cell = ws.cell(row=ws.max_row + 1, column=3, value="Ссылка на медиа")
+                cell.hyperlink = link  # make it clickable
+                cell.style = "Hyperlink"
                 ws.append([
-                lang,
-                who,
-                f"Ссылка на медиа: {link}",
-                clean_datetime(msg.date_time),])
+                    lang,
+                    who,
+                    cell.value,  # display text
+                    clean_datetime(msg.date_time),
+                ])
             else:
                 ws.append([
                 lang,
