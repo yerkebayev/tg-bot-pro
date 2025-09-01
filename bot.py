@@ -45,7 +45,7 @@ async def daily_report():
         yesterday_date = datetime.now() - timedelta(days=1)
         yesterday_str = yesterday_date.strftime("%Y-%m-%d")
         messages = get_messages_between_dates(yesterday_str, yesterday_str)
-        convs = build_conversations(messages, "77009809778")
+        convs = build_conversations(messages, MAIN_PHONE)
 
         if not convs:
             logger.info("No messages for yesterday to send.")
@@ -84,7 +84,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     today_str = datetime.now().strftime("%Y-%m-%d")
     last_messages = get_messages_between_dates(today_str, today_str)
-    convs = build_conversations(last_messages, "77009809778")
+    convs = build_conversations(last_messages, MAIN_PHONE)
 
     if not convs:
         await update.message.reply_text("No conversations found.")
@@ -114,7 +114,7 @@ async def yesterday(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Fetch yesterday's messages
     last_messages = get_messages_between_dates(yesterday_str, yesterday_str)
-    convs = build_conversations(last_messages, "77009809778")
+    convs = build_conversations(last_messages, MAIN_PHONE)
 
     if not convs:
         await update.message.reply_text("No conversations found.")
@@ -166,7 +166,7 @@ async def period(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Fetch messages in that period
     last_messages: List[Message] = get_messages_between_dates(start_sql, end_sql)
-    convs = build_conversations(last_messages, "77009809778")
+    convs = build_conversations(last_messages, MAIN_PHONE)
 
     if not convs:
         await update.message.reply_text("Сообщения за указанный период не найдены.")
