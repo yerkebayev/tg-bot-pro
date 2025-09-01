@@ -19,6 +19,7 @@ load_dotenv()  # load .env file
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 dbPath = os.getenv("DB_PATH")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+MAIN_PHONE = os.getenv("MAIN_PHONE")
 
 
 
