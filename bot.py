@@ -11,11 +11,14 @@ from bot_utils import export_conversations_to_excel
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
+import asyncio
+from datetime import time as dtime
 
 load_dotenv()  # load .env file
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 dbPath = os.getenv("DB_PATH")
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 
 
 
@@ -25,6 +28,41 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+async def daily_report():
+    """Sends previous day's messages to admin at 10 AM every day."""
+    while True:
+        now = datetime.now()
+        # Schedule next run at 10:00
+        target_time = now.replace(hour=10, minute=0, second=0, microsecond=0)
+        if now >= target_time:
+            target_time += timedelta(days=1)
+        wait_seconds = (target_time - now).total_seconds()
+        await asyncio.sleep(wait_seconds)
+
+        # Get yesterday's messages
+        yesterday_date = datetime.now() - timedelta(days=1)
+        yesterday_str = yesterday_date.strftime("%Y-%m-%d")
+        messages = get_messages_between_dates(yesterday_str, yesterday_str)
+        convs = build_conversations(messages, "77009809778")
+
+        if not convs:
+            logger.info("No messages for yesterday to send.")
+            continue
+
+        # Export to Excel
+        file_name_date = yesterday_date.strftime("%d-%m-%Y")
+        file_path = export_conversations_to_excel(convs, file_name_date)
+
+        # Send Excel to admin
+        try:
+            async with Application.builder().token(BOT_TOKEN).build() as app:
+                await app.bot.send_document(chat_id=ADMIN_CHAT_ID,
+                                            document=open(file_path, "rb"),
+                                            filename=f"conversations-{file_name_date}.xlsx")
+                logger.info(f"Sent yesterday's report to admin {ADMIN_CHAT_ID}")
+        except Exception as e:
+            logger.error(f"Failed to send daily report: {e}")
 
 # === Bot Commands ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -209,7 +247,7 @@ def get_messages_between_dates(start_date: str, end_date: str) -> List[Message]:
     
 
 # === Main ===
-def main():
+async def main():
     logger.info("Starting bot...")
 
     app = Application.builder().token(BOT_TOKEN).build()
@@ -221,8 +259,14 @@ def main():
     app.add_handler(CommandHandler("yesterday", yesterday))
     app.add_handler(CommandHandler("period", period))
 
+    # Background task for daily report
+    async def on_startup(app: Application):
+        asyncio.create_task(daily_report())
+
+    app.post_init = on_startup
+
     logger.info("Bot is running. Waiting for updates...")
-    app.run_polling()
+    await app.run_polling()
 
 @dataclass
 class Conversation:
@@ -256,4 +300,9 @@ def build_conversations(messages: List[Message], bot_phone: str) -> List[Convers
   
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    import nest_asyncio
+
+    # Fix for "event loop already running" errors
+    nest_asyncio.apply()
+    asyncio.get_event_loop().run_until_complete(main())
