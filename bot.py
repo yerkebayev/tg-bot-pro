@@ -51,7 +51,7 @@ async def daily_report(app: Application):
         file_name_date = yesterday_date.strftime("%d-%m-%Y")
         file_path = export_conversations_to_excel(convs, file_name_date)
 
-        caption_text = f"Отзывы за период {file_name_date}"
+        caption_text = f"Отзывы за {file_name_date}"
         try:
             with open(file_path, "rb") as f:
                 await app.bot.send_document(
@@ -89,7 +89,7 @@ async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Export to Excel
     file_path = export_conversations_to_excel(convs, today_str)
     
-    caption_text = f"Отзывы за период {today_str}"
+    caption_text = f"Отзывы за {today_str}"
     try:
         with open(file_path, "rb") as f:
             await update.message.reply_document(f, filename=f"conversations-{today_str}.xlsx", caption=caption_text)
@@ -120,7 +120,7 @@ async def yesterday(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Export to Excel
     file_path = export_conversations_to_excel(convs, file_name_date)
-    caption_text = f"Отзывы за период {file_name_date}"
+    caption_text = f"Отзывы за {file_name_date}"
 
     # Send Excel file via Telegram and delete it afterwards
     try:
