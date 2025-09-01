@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 import asyncio
 from datetime import time as dtime
+from zoneinfo import ZoneInfo
 
 load_dotenv()  # load .env file
 
@@ -30,19 +31,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def daily_report():
-    """Sends previous day's messages to admin at 10 AM every day."""
+async def daily_report(app: Application):
     while True:
-        now = datetime.now()
-        # Schedule next run at 10:00
-        target_time = now.replace(hour=9, minute=0, second=0, microsecond=0)
+        now = datetime.now(ZoneInfo("Asia/Almaty"))
+        target_time = now.replace(hour=9, minute=5, second=0, microsecond=0)
         if now >= target_time:
             target_time += timedelta(days=1)
-        wait_seconds = (target_time - now).total_seconds()
-        await asyncio.sleep(wait_seconds)
+        await asyncio.sleep((target_time - now).total_seconds())
 
-        # Get yesterday's messages
-        yesterday_date = datetime.now() - timedelta(days=1)
+        yesterday_date = now - timedelta(days=1)
         yesterday_str = yesterday_date.strftime("%Y-%m-%d")
         messages = get_messages_between_dates(yesterday_str, yesterday_str)
         convs = build_conversations(messages, MAIN_PHONE)
@@ -51,29 +48,27 @@ async def daily_report():
             logger.info("No messages for yesterday to send.")
             continue
 
-        # Export to Excel
         file_name_date = yesterday_date.strftime("%d-%m-%Y")
         file_path = export_conversations_to_excel(convs, file_name_date)
 
-        # Send Excel to admin
+        caption_text = f"Отзывы за период {file_name_date}"
         try:
-            async with Application.builder().token(BOT_TOKEN).build() as app:
+            with open(file_path, "rb") as f:
                 await app.bot.send_document(
                     chat_id=ADMIN_CHAT_ID,
-                    document=open(file_path, "rb"),
-                    filename=f"conversations-{file_name_date}.xlsx"
+                    document=f,
+                    filename=f"conversations-{file_name_date}.xlsx",
+                    caption=caption_text
                 )
                 logger.info(f"Sent yesterday's report to admin {ADMIN_CHAT_ID}")
-        except Exception as e:
-            logger.error(f"Failed to send daily report: {e}")
         finally:
+            import os
             try:
-                import os
                 os.remove(file_path)
                 logger.info(f"Deleted temporary file: {file_path}")
             except Exception as e:
                 logger.warning(f"Failed to delete temporary file {file_path}: {e}")
-            
+
 
 # === Bot Commands ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
