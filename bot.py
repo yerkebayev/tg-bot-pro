@@ -35,7 +35,7 @@ async def daily_report():
     while True:
         now = datetime.now()
         # Schedule next run at 10:00
-        target_time = now.replace(hour=10, minute=0, second=0, microsecond=0)
+        target_time = now.replace(hour=9, minute=0, second=0, microsecond=0)
         if now >= target_time:
             target_time += timedelta(days=1)
         wait_seconds = (target_time - now).total_seconds()
