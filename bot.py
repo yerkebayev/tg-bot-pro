@@ -298,7 +298,7 @@ async def main():
 
     # Background task for daily report
     async def on_startup(app: Application):
-        asyncio.create_task(daily_report())
+        asyncio.create_task(daily_report(app))
 
     app.post_init = on_startup
 
