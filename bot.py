@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 async def daily_report(app: Application):
     while True:
         now = datetime.now(ZoneInfo("Asia/Almaty"))
-        target_time = now.replace(hour=9, minute=5, second=0, microsecond=0)
+        target_time = now.replace(hour=10, minute=0, second=0, microsecond=0)
         if now >= target_time:
             target_time += timedelta(days=1)
         await asyncio.sleep((target_time - now).total_seconds())
