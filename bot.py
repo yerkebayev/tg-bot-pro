@@ -57,12 +57,22 @@ async def daily_report():
         # Send Excel to admin
         try:
             async with Application.builder().token(BOT_TOKEN).build() as app:
-                await app.bot.send_document(chat_id=ADMIN_CHAT_ID,
-                                            document=open(file_path, "rb"),
-                                            filename=f"conversations-{file_name_date}.xlsx")
+                await app.bot.send_document(
+                    chat_id=ADMIN_CHAT_ID,
+                    document=open(file_path, "rb"),
+                    filename=f"conversations-{file_name_date}.xlsx"
+                )
                 logger.info(f"Sent yesterday's report to admin {ADMIN_CHAT_ID}")
         except Exception as e:
             logger.error(f"Failed to send daily report: {e}")
+        finally:
+            try:
+                import os
+                os.remove(file_path)
+                logger.info(f"Deleted temporary file: {file_path}")
+            except Exception as e:
+                logger.warning(f"Failed to delete temporary file {file_path}: {e}")
+            
 
 # === Bot Commands ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -82,10 +92,19 @@ async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Export to Excel
     file_path = export_conversations_to_excel(convs, today_str)
+    
+    caption_text = f"Отзывы за период {today_str}"
+    try:
+        with open(file_path, "rb") as f:
+            await update.message.reply_document(f, filename=f"conversations-{today_str}.xlsx", caption=caption_text)
+    finally:
+        import os
+        try:
+            os.remove(file_path)
+            logger.info(f"Deleted temporary file: {file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete temporary file {file_path}: {e}")
 
-    # Send Excel file via Telegram
-    with open(file_path, "rb") as f:
-        await update.message.reply_document(f, filename="conversations-{today_str}.xlsx")
 
 async def yesterday(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Compute yesterday's date
@@ -105,10 +124,19 @@ async def yesterday(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Export to Excel
     file_path = export_conversations_to_excel(convs, file_name_date)
+    caption_text = f"Отзывы за период {file_name_date}"
 
-    # Send Excel file via Telegram
-    with open(file_path, "rb") as f:
-        await update.message.reply_document(f, filename=f"conversations-{file_name_date}.xlsx")
+    # Send Excel file via Telegram and delete it afterwards
+    try:
+        with open(file_path, "rb") as f:
+            await update.message.reply_document(f, filename=f"conversations-{file_name_date}.xlsx", caption=caption_text)
+    finally:
+        import os
+        try:
+            os.remove(file_path)
+            logger.info(f"Deleted temporary file: {file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete temporary file {file_path}: {e}")
 
 
 async def period(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -149,9 +177,22 @@ async def period(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Export to Excel
     file_path = export_conversations_to_excel(convs, file_name_date)
 
-    # Send Excel file
-    with open(file_path, "rb") as f:
-        await update.message.reply_document(f, filename=f"conversations-{file_name_date}.xlsx")
+    caption_text = f"Отзывы за период {start_date.strftime('%d-%m-%Y')} — {end_date.strftime('%d-%m-%Y')}"
+
+    try:
+        with open(file_path, "rb") as f:
+            await update.message.reply_document(
+                f,
+                filename=f"conversations-{file_name_date}.xlsx",
+                caption=caption_text
+            )
+    finally:
+        import os
+        try:
+            os.remove(file_path)
+            logger.info(f"Deleted temporary file: {file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete temporary file {file_path}: {e}")
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
