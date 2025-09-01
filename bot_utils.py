@@ -52,12 +52,19 @@ def export_conversations_to_excel(conversations: List[Conversation], period: str
             who = "Клиент" if msg.from_phone == conv.client_phone else "Бот"
             lang = LANG_MAP.get(last_m.language, last_m.language)  # преобразуем код языка
 
-            ws.append([
+            if msg.text.startswith('/var/www/whatsapp-bot/media'):
+                link = msg.text.replace('/var/www/whatsapp-bot', 'http://164.90.219.27')
+                ws.append([
+                lang,
+                who,
+                f"Ссылка на медиа: {link}",
+                clean_datetime(msg.date_time),])
+            else:
+                ws.append([
                 lang,
                 who,
                 msg.text,
-                clean_datetime(msg.date_time),
-            ])
+                clean_datetime(msg.date_time),])
 
             # Перенос текста в строке
             for col in range(1, len(headers) + 1):
